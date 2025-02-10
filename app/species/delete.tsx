@@ -57,12 +57,12 @@ export default function DeleteSpeciesButton({ userId, species }: { userId: strin
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete "{species.scientific_name}"? This action cannot be undone.</p>
+          <p>Are you sure you want to delete &quot;{species.scientific_name}&quot;? This action cannot be undone.</p>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setOpen(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button variant="secondary" onClick={handleDelete} disabled={loading}>
+            <Button variant="secondary" onClick={() => void handleDelete()} disabled={loading}>
               {loading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

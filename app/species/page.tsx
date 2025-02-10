@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Separator } from "@/components/ui/separator";
 import { TypographyH2 } from "@/components/ui/typography";
 import { createBrowserSupabaseClient } from "@/lib/client-utils";
@@ -28,8 +28,8 @@ export default function SpeciesList() {
   const [filteredSpecies, setFilteredSpecies] = useState<Species[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Function to fetch species from the database.
-  async function fetchSpecies() {
+  // Wrap fetchSpecies in useCallback so that it remains stable between renders.
+  const fetchSpecies = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
       router.push("/");
@@ -49,11 +49,11 @@ export default function SpeciesList() {
 
     setSpecies(speciesData || []);
     setFilteredSpecies(speciesData || []);
-  }
+  }, [router, supabase]);
 
   useEffect(() => {
     // Initial fetch when the component mounts.
-    fetchSpecies();
+    void fetchSpecies();
 
     // Subscribe to realtime INSERT events using a separate client instance.
     const realtimeClient = createBrowserSupabaseClient();
@@ -65,25 +65,28 @@ export default function SpeciesList() {
         { event: "INSERT", schema: "public", table: "species" },
         (payload) => {
           console.log("New species inserted (via realtime):", payload);
-          fetchSpecies();
+          void fetchSpecies();
         }
       )
       .subscribe();
 
     return () => {
-      realtimeClient.removeChannel(channel);
+      void realtimeClient.removeChannel(channel);
     };
-  }, [router]);
+  }, [fetchSpecies]);
 
-  // Wait until userId is set before rendering.
+
   if (!userId) return <div>Loading...</div>;
 
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <TypographyH2>Species List</TypographyH2>
-        {/* Pass fetchSpecies as the callback so that the list refreshes upon adding */}
-        <AddSpeciesDialog userId={userId} onSpeciesAdded={fetchSpecies} />
+        {/* Correctly passing a function to refresh the species list */}
+        <AddSpeciesDialog
+          userId={userId}
+          onSpeciesAdded={() => void fetchSpecies()}
+        />
       </div>
 
       {/* Filtering System */}
@@ -99,6 +102,7 @@ export default function SpeciesList() {
     </>
   );
 }
+
 
 
 

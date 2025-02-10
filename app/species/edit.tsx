@@ -17,11 +17,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { createBrowserSupabaseClient } from "@/lib/client-utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import { useState, type BaseSyntheticEvent } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import type { Database } from "@/lib/schema"; 
+import type { Database } from "@/lib/schema";
 
 // Define the kingdom options
 const kingdoms = z.enum(["Animalia", "Plantae", "Fungi", "Protista", "Archaea", "Bacteria"]);
@@ -49,15 +48,9 @@ type FormData = z.infer<typeof speciesSchema>;
 type Species = Database["public"]["Tables"]["species"]["Row"];
 
 export default function EditSpeciesDialog({ userId, species }: { userId: string; species: Species }) {
-  // Only allow editing if the logged-in user is the author of the species entry.
-  if (userId !== species.author) {
-    return null;
-  }
-
-  const router = useRouter();
+  // Ensure that all hooks are called unconditionally at the top
   const [open, setOpen] = useState<boolean>(false);
 
-  // Initialize the form with default values from the species data
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
     defaultValues: {
@@ -70,6 +63,14 @@ export default function EditSpeciesDialog({ userId, species }: { userId: string;
     },
     mode: "onChange",
   });
+
+  // Only allow editing if the logged-in user is the author of the species entry.
+  if (userId !== species.author) {
+    return null;
+  }
+
+  // Initialize the form with default values from the species data
+
 
   const onSubmit = async (input: FormData) => {
     const supabase = createBrowserSupabaseClient();
@@ -96,8 +97,14 @@ export default function EditSpeciesDialog({ userId, species }: { userId: string;
       return;
     }
 
+    // Close the dialog
     setOpen(false);
-    router.refresh();
+
+    // Option 1: Refresh the current route using Next.js router (recommended if you're using the App Router)
+    window.location.reload();
+
+    // Option 2: Alternatively, perform a full browser reload.
+    // window.location.reload();
 
     toast({
       title: "Species updated!",
@@ -181,7 +188,9 @@ export default function EditSpeciesDialog({ userId, species }: { userId: string;
                         type="number"
                         {...field}
                         value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : "")}
+                        onChange={(e) =>
+                          field.onChange(e.target.value ? parseInt(e.target.value, 10) : "")
+                        }
                       />
                     </FormControl>
                     <FormMessage />
